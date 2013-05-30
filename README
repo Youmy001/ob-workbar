@@ -6,7 +6,6 @@ A light workspace indicator bar for Openbox [by Tommy Teasdale]
   - Place the bar on any side of the screen
   - Seperate color for either the bar, inactive workspace and active workspace
   - Automatically adjust to the actual number of workspace
-  - The bar can the be placed on any side of the screen
   - Support tranparency
   - Can work on any window manager
 
