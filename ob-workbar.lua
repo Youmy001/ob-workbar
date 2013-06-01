@@ -1,17 +1,21 @@
 --[[
 	Conky ob-workbar by Youmy001
-	A light workspace indicator bar for Openbox
+	A light workspace indicator bar for Openbox by Youmy001
 	
 	Features:
+		- Place the bar on any side of the screen
+		- Seperate color for either the bar, inactive workspace and active workspace
 		- Automatically adjust to the actual number of workspace
-		- The bar can the be placed on any side of the screen
 		- Support tranparency
+		- Can work on any window manager
 	
 	Requires takao font
 		sudo apt-get install ttf-takao
-	
+		
+	This file is part of ob-workbar
 	
 ]]--
+
 require 'cairo'
 
 --====== Global settings table ===============================================--
@@ -19,38 +23,40 @@ require 'cairo'
 setting_table = {
 	-- General setting sfor the whole bar
 	{
-		width=20,				-- This is the size of the bar in pixel. The higher it is
+		width=21,				-- This is the size of the bar in pixel. The higher it is
 								-- thicker the bar will become.
-		position='bottom'		-- This is the side on which the bar will be displayed.
+								
+		position='bottom',		-- This is the side on which the bar will be displayed.
 								-- It can be either 'top', 'bottom', 'left' and 'right'.
+								
 		background='0x000000',	-- Color of the bar's background
-		alpha=0,				-- Transparency of the background color
-		inactive_text='none',	-- Shall the inactive workspace number and name be 
-								-- printed ? It can be 'none', 'number', 'name' or 'both'.
-								-- Not effective yet.
-		active_text='both'		-- Shall the active workspace number and name be printed ?
-								-- It can be 'none', 'number', 'name' or 'both'.
+								
+		alpha=0.5,				-- Transparency of the background color
 	},
 	-- Inactive workspace settings
 	{
 		width=20,				-- Size of an inactive workspace in pixel. The higher it
 								-- is, thicker the bar will become.
 		rounded=false,			-- Shall the corners be rounded. Not effective yet.
-		background='0x000000',	-- Color of the inactive workspace
+		background='0x888888',	-- Color of the inactive workspace
 		background_alpha=0,		-- Transparency of the background color
+		text_type='number',		-- Shall the inactive workspace number and name be 
+								-- printed ? It can be 'none' or 'number'.
 		text='0xFFFFFF',		-- Color of the text
-		text_alpha=1			-- Transparency of the text
+		text_alpha=1,			-- Transparency of the text
 	},
 	-- Active workspace settings
 	{
-		width=20,				-- Size of an inactive workspace in pixel. The higher it
+		width=28,				-- Size of an inactive workspace in pixel. The higher it
 								-- is, thicker the bar will become.
 		rounded=false,			-- Shall the corners be rounded. Not effective yet.
 		background='0x02FEFE',	-- Color of the inactive workspace
 		background_alpha=1,		-- Transparency of the background color
+		text_type='both',		-- Shall the active workspace number and/or name be 
+								-- printed ? It can be 'none', 'number', 'name' or 'both'.
 		text='0x000000',		-- Color of the text
-		text_alpha=1			-- Transparency of the text
-	}
+		text_alpha=1,			-- Transparency of the text
+	},
 }
 
 
@@ -58,8 +64,9 @@ setting_table = {
 function draw_ring(cr,t,pt)--t=percentage, pt=setting_table
 	local w,h=conky_window.width,conky_window.height
 
-	local xc,yc,ring_r,ring_w,sa,ea=pt['x'],pt['y'],pt['radius'],pt['thickness'],pt['start_angle'],pt['end_angle']
-	local bgc, bga, fgc, fga=pt['bg_colour'], pt['bg_alpha'], pt['fg_colour'], pt['fg_alpha']
+	local xc,yc,ring_r,ring_w,sa,ea=pt['x'],pt['y'],pt['radius'],pt['thickness'],
+									pt['start_angle'],pt['end_angle']
+	local bgc, bga, fgc, fga=pt['bg_colour'],pt['bg_alpha'],pt['fg_colour'],pt['fg_alpha']
 
 	local angle_0=sa*(2*math.pi/360)-math.pi/2
 	local angle_f=ea*(2*math.pi/360)-math.pi/2
@@ -78,124 +85,40 @@ function draw_ring(cr,t,pt)--t=percentage, pt=setting_table
 	cairo_stroke(cr)
 end
 
-
-
-function draw_workspace_bar(ori,pos,width,bg_color,bg_alpha,fg_color,fg_alpha, option)
-	-- Workspace bar
-	-- ------------------
-	-- Indicates which desktop is the active one.
-	-- The bar is seperated into as many parts as workspaces. It can be
-	-- positionned on each border of the conky surface.
-	--
-	-- To make the bar span the whole height or width of screen ensure
-	-- the conky size fits your screen resolution.
-	--
-	-- The available option are name, number, both and none. 
-	--
-	-- Variables
-	local line_width=width;
-		-- Width of the workspace indicator
-	local line_cap=CAIRO_LINE_CAP_BUTT;
-		-- Style of the indicator
-	local b_red,b_green,b_blue,b_alpha=rgb_to_r_g_b(bg_color,bg_alpha);
-		-- Color of the whole bar
-	local f_red,f_green,f_blue,f_alpha=rgb_to_r_g_b(fg_color,fg_alpha);
-		-- Color of the workspace indicator
-	local b_x,b_y,f_x,f_y,f_lenght;
-		-- Miscellaneous positonning and workspace indicator width
+function draw_workspace(xPos,yPos,lenght,st,work_num)
 	local workspace=tostring(conky_parse("${desktop_name}"));
-		-- Wokspace name
+		-- Workspace name
 	local workspace_num=tostring(conky_parse("$desktop"));
+		-- Workspace number
 	
-	if ori=="h" then
-		b_x=0;
-		f_lenght=tonumber(conky_window.width/conky_parse("${desktop_number}"));
-		if pos=="t" then
-			b_y=(width/2);
-		else
-			b_y=conky_window.height-(width/2);
-		end
-		f_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-		f_y=b_y;
-	elseif ori=="v" then
-		b_y=0;
-		f_lenght=tonumber(conky_window.height/conky_parse("${desktop_number}"));
-		if pos=="r" then
-			b_x=conky_window.width-(width/2);
-		else
-			b_x=(width/2);
-		end
-		f_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-		f_x=b_x;
+	if work_num ~= nil then
+		workspace_num=work_num;
 	end
 	
-	-- Bottom bar(if position is bottom and orientation is horizontal)
-	----------------------------
-	if ori=="h" then
-		cairo_set_line_width (cr,1);
-		cairo_set_line_cap  (cr, line_cap);
-		cairo_set_source_rgba (cr,f_red,f_green,f_blue,f_alpha);
-		if pos=="t" then
-			cairo_move_to (cr,b_x,1);
-		else
-			cairo_move_to (cr,b_x,conky_window.height-1);
-		end
-		cairo_rel_line_to (cr,conky_window.width,0);
-		cairo_stroke(cr);-- Draw object on surface
-	elseif ori=="v" then
-		cairo_set_line_width (cr,1);
-		cairo_set_line_cap  (cr, line_cap);
-		cairo_set_source_rgba (cr,f_red,f_green,f_blue,f_alpha);
-		if pos=="r" then
-			cairo_move_to (cr,conky_window.width-2,0);
-		else
-			cairo_move_to (cr,1,0);
-		end
-		cairo_rel_line_to (cr,0,conky_window.height);
-		cairo_stroke(cr);-- Draw object on surface
-	end
+	cairo_set_line_width (cr,st['width']);
 	
-	-- Background
-	----------------------------
-	cairo_set_line_width (cr,line_width);
-	cairo_set_line_cap  (cr, line_cap);
-	cairo_set_source_rgba (cr,b_red,b_green,b_blue,b_alpha);
-	cairo_move_to (cr,b_x,b_y);
-	if ori=="h" then
-		cairo_rel_line_to (cr,conky_window.width,0);
+	cairo_set_line_cap  (cr, CAIRO_LINE_CAP_BUTT);
+	cairo_set_source_rgba (cr,rgb_to_r_g_b(st['background'],st['background_alpha']));
+	cairo_move_to (cr,xPos,yPos);
+	if setting_table[1]['position']=="top" or setting_table[1]['position']=="bottom" then
+		cairo_rel_line_to (cr,lenght,0);
 	else
-		cairo_rel_line_to (cr,0,conky_window.height);
-	end
-	cairo_stroke(cr);-- Draw object on surface
-	
-	-- Foreground
-	----------------------------
-	cairo_set_line_width (cr,line_width);
-	cairo_set_line_cap  (cr, line_cap);
-	cairo_set_source_rgba (cr,f_red,f_green,f_blue,f_alpha);
-	cairo_move_to (cr,f_x,f_y);
-	if ori=="h" then
-		cairo_rel_line_to (cr,f_lenght,0);
-	else
-		cairo_rel_line_to (cr,0,f_lenght);
+		cairo_rel_line_to (cr,0,lenght);
 	end
 	cairo_stroke(cr);-- Draw object on surface
 	
 	--Text
-	----------------------------
-	if ori=="h" then
-		if option=="name" then
-			displayText(f_x+5,f_y+(line_width/4)+1,"Liberation Sans Bold",line_width-2,bg_color,1,workspace);
-		elseif option=="number" then
-			displayText(f_x+5,f_y+(line_width/4)+1,"Liberation Sans Bold",line_width-2,bg_color,1,workspace_num..".")
-		elseif option=="both" then
-			displayText(f_x+5,f_y+(line_width/4)+1,"Liberation Sans Bold",line_width-2,bg_color,1,workspace_num..".  "..workspace)
+	---------------------------
+	if setting_table[1]['position']=="top" or setting_table[1]['position']=="bottom" then
+		if st['text_type']=="name" then
+			displayText(xPos+5,yPos+(st['width']/4)+1,"Liberation Sans Bold",st['width']-2,st['text'],st['text_alpha'],workspace);
+		elseif st['text_type']=="number" then
+			displayText(xPos+5,yPos+(st['width']/4)+1,"Liberation Sans Bold",st['width']-2,st['text'],st['text_alpha'],workspace_num..".");
+		elseif st['text_type']=="both" then
+			displayText(xPos+5,yPos+(st['width']/4)+1,"Liberation Sans Bold",st['width']-2,st['text'],st['text_alpha'],workspace_num..".  "..workspace);
 		end
 	end
-	
-end	-- End of draw_workspace_bar
-
-
+end
 
 function displayText(xPos,yPos,font,font_size,color,alpha,text)
 
@@ -214,35 +137,139 @@ function rgb_to_r_g_b(colour,alpha)
 	return ((colour / 0x10000) % 0x100) / 255., ((colour / 0x100) % 0x100) / 255., (colour % 0x100) / 255., alpha;
 end
 
-function conky_main()
-	if conky_window == nil then return end;
-	local cs = cairo_xlib_surface_create(conky_window.display, conky_window.drawable, conky_window.visual, conky_window.width, conky_window.height);
+function conky_workbar_main()
+	if conky_window == nil then
+		return "Error";
+	end
+	
+	local cs = cairo_xlib_surface_create(conky_window.display,
+		conky_window.drawable, conky_window.visual,
+		conky_window.width, conky_window.height);
 	cr = cairo_create(cs);
 	
 	local updates=tonumber(conky_parse('${updates}'));
 	
 	if updates>2 then
-	
-		-- Get data to display
-		time_date=tostring(conky_parse("${time %Y年%m月%d日}"));
-		time_time=tostring(conky_parse("${time %H時%M分%S秒}"));
-		time_day=tostring(conky_parse("${time %a}"));
-		workspace=tostring(conky_parse("${desktop_name}"));
 		
-		-- Print Time and date
-		displayText(5,103,"takao gothic",120,0x02FEFE,1.0,time_day);
-		displayText(125,70,"takao gothic",72,0xFFFFFF,1.0,time_date);
-		displayText(128,107,"takao gothic",34,0xFFFFFF,1.0,time_time);
 		
-		displayText(1145,193,"Liberation Sans Bold",250,0x02FEFE,1.0,"#!");
+		-- Variables
+		local line_width=setting_table[1]['width'];
+			-- Width of the workspace indicator
+		local line_cap=CAIRO_LINE_CAP_BUTT;
+			-- Style of the indicator
+		local b_red,b_green,b_blue,b_alpha=rgb_to_r_g_b(setting_table[2]['background'],setting_table[2]['background_alpha']);
+			-- Color of the whole bar
+		local f_red,f_green,f_blue,f_alpha=rgb_to_r_g_b(setting_table[3]['background'],setting_table[3]['background_alpha']);
+			-- Color of the workspace indicator
+		local b_x,b_y,f_x,f_y,f_lenght;
+			-- Miscellaneous positonning and workspace indicator width
+		local workspace=tostring(conky_parse("${desktop_name}"));
+			-- Workspace name
+		local workspace_num=tostring(conky_parse("$desktop"));
+			-- Workspace number
+		local ctr=0;
 		
-		cairo_rotate (cr, -60*math.pi/180);
+		-- Data
+		----------------------------
+		if setting_table[1]['position']=="top" then
+			b_x=0;
+			f_lenght=tonumber(conky_window.width/conky_parse("${desktop_number}"));
+			b_y=((line_width/2)+2);
+			f_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			f_y=b_y;
+		elseif setting_table[1]['position']=="bottom" then
+			b_x=0;
+			f_lenght=tonumber(conky_window.width/conky_parse("${desktop_number}"));
+			b_y=conky_window.height-(line_width/2)-4;
+			f_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			f_y=b_y;
+		elseif setting_table[1]['position']=="right" then
+			b_y=0;
+			f_lenght=tonumber(conky_window.height/conky_parse("${desktop_number}"));
+			b_x=conky_window.width-((line_width/2)+4);
+			f_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			f_x=b_x;
+		elseif setting_table[1]['position']=="left" then
+			b_y=0;
+			f_lenght=tonumber(conky_window.height/conky_parse("${desktop_number}"));
+			b_x=(line_width/2)+2;
+			f_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			f_x=b_x;
+		end
+		----------------------------
+		-- End Data
 		
-		displayText(-385,845,"takao gothic",32,0x02FEFE,1.0,"クランチバン");
 		
-		cairo_rotate (cr, 60*math.pi/180);
+		-- Background
+		----------------------------
+		cairo_set_line_width (cr,line_width);
+		cairo_set_line_cap  (cr, line_cap);
+		cairo_set_source_rgba (cr,rgb_to_r_g_b(setting_table[1]['background'],setting_table[1]['alpha']));
+		cairo_move_to (cr,b_x,b_y);
+		if setting_table[1]['position']=="top" or setting_table[1]['position']=="bottom" then
+			cairo_rel_line_to (cr,conky_window.width,0);
+		else
+			cairo_rel_line_to (cr,0,conky_window.height);
+		end
+		cairo_stroke(cr);-- Draw object on surface
+		----------------------------
+		-- End background
 		
-		draw_workspace_bar("h","b",20,0x000000,0,0x02FEFE,1,"both");
+		
+		-- Inactive workspace
+		----------------------------
+		while ctr<=tonumber(conky_parse("${desktop_number}")) do
+			if setting_table[1]['position']=="top" or setting_table[1]['position']=="bottom" then
+				w_x=(ctr*f_lenght)-f_lenght;
+				w_y=f_y;
+			elseif setting_table[1]['position']=="left" or setting_table[1]['position']=="right" then
+				w_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+				w_x=f_x;
+			end
+			draw_workspace(w_x,w_y,f_lenght,setting_table[2],ctr);
+			ctr=ctr+1;
+		end
+		----------------------------
+		-- End inactive workspace
+		
+		
+		-- Bottom bar
+		----------------------------
+		cairo_set_line_width (cr,2);
+		cairo_set_line_cap  (cr, line_cap);
+		cairo_set_source_rgba (cr,f_red,f_green,f_blue,f_alpha);
+		
+		if setting_table[1]['position']=="top" then
+		
+			cairo_move_to (cr,b_x,1);
+			cairo_rel_line_to (cr,conky_window.width,0);
+			
+		elseif setting_table[1]['position']=="bottom" then
+		
+			cairo_move_to (cr,b_x,conky_window.height-3);
+			cairo_rel_line_to (cr,conky_window.width,0);
+			
+		elseif setting_table[1]['position']=="right" then
+			
+			cairo_move_to (cr,conky_window.width-4,0);
+			cairo_rel_line_to (cr,0,conky_window.height);
+			
+		elseif setting_table[1]['position']=="left" then
+			
+			cairo_move_to (cr,2,0);
+			cairo_rel_line_to (cr,0,conky_window.height);
+			
+		end
+		cairo_stroke(cr);-- Draw object on surface
+		----------------------------
+		-- End Bottom bar
+		
+		
+		-- Active workspace
+		----------------------------
+		draw_workspace(f_x,f_y,f_lenght,setting_table[3]);
+		----------------------------
+		-- End Active Workspace
 		
 		
 	end

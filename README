@@ -26,6 +26,12 @@ Execution
 
 ```$ conky -c conky.conf```
 
+If you are running another conky config, copy the lua script into the same folder 
+as your config, make this config fit your screen resolution and add the following into it:
+
+```lua_load ob-workbar.lua```
+```lua_draw_hook_post workbar_main```
+
 License
 -
 
@@ -45,5 +51,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
   [by Tommy Teasdale]: http://http://youmy001.deviantart.com/
   
-
-    
