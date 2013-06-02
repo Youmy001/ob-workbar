@@ -23,7 +23,7 @@ require 'cairo'
 setting_table = {
 	-- General setting sfor the whole bar
 	{
-		width=21,				-- This is the size of the bar in pixel. The higher it is
+		width=20,				-- This is the size of the bar in pixel. The higher it is
 								-- thicker the bar will become.
 								
 		position='bottom',		-- This is the side on which the bar will be displayed.
@@ -47,7 +47,7 @@ setting_table = {
 	},
 	-- Active workspace settings
 	{
-		width=28,				-- Size of an inactive workspace in pixel. The higher it
+		width=25,				-- Size of an inactive workspace in pixel. The higher it
 								-- is, thicker the bar will become.
 		rounded=false,			-- Shall the corners be rounded. Not effective yet.
 		background='0x02FEFE',	-- Color of the inactive workspace
@@ -154,6 +154,8 @@ function conky_workbar_main()
 		
 		-- Variables
 		local line_width=setting_table[1]['width'];
+		local a_width=setting_table[3]['width'];
+		local i_width=setting_table[2]['width'];
 			-- Width of the workspace indicator
 		local line_cap=CAIRO_LINE_CAP_BUTT;
 			-- Style of the indicator
@@ -175,26 +177,34 @@ function conky_workbar_main()
 			b_x=0;
 			f_lenght=tonumber(conky_window.width/conky_parse("${desktop_number}"));
 			b_y=((line_width/2)+2);
-			f_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-			f_y=b_y;
+			a_y=((setting_table[3]['width']/2)+2);
+			i_y=((setting_table[2]['width']/2)+2);
+			a_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			i_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
 		elseif setting_table[1]['position']=="bottom" then
 			b_x=0;
 			f_lenght=tonumber(conky_window.width/conky_parse("${desktop_number}"));
 			b_y=conky_window.height-(line_width/2)-4;
-			f_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-			f_y=b_y;
+			a_y=conky_window.height-(a_width/2)-4;
+			i_y=conky_window.height-(i_width/2)-4;
+			a_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			i_x=(conky_parse("${desktop}")*f_lenght)-f_lenght;
 		elseif setting_table[1]['position']=="right" then
 			b_y=0;
 			f_lenght=tonumber(conky_window.height/conky_parse("${desktop_number}"));
 			b_x=conky_window.width-((line_width/2)+4);
-			f_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-			f_x=b_x;
+			a_x=conky_window.width-((setting_table[3]['width']/2)+4);
+			i_x=conky_window.width-((setting_table[2]['width']/2)+4);
+			a_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			i_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
 		elseif setting_table[1]['position']=="left" then
 			b_y=0;
 			f_lenght=tonumber(conky_window.height/conky_parse("${desktop_number}"));
 			b_x=(line_width/2)+2;
-			f_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-			f_x=b_x;
+			a_x=(setting_table[3]['width']/2)+2;
+			i_x=(setting_table[2]['width']/2)+2;
+			a_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+			i_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
 		end
 		----------------------------
 		-- End Data
@@ -219,14 +229,16 @@ function conky_workbar_main()
 		-- Inactive workspace
 		----------------------------
 		while ctr<=tonumber(conky_parse("${desktop_number}")) do
-			if setting_table[1]['position']=="top" or setting_table[1]['position']=="bottom" then
-				w_x=(ctr*f_lenght)-f_lenght;
-				w_y=f_y;
-			elseif setting_table[1]['position']=="left" or setting_table[1]['position']=="right" then
-				w_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
-				w_x=f_x;
+			if ctr ~=tonumber(conky_parse("${desktop}")) then
+				if setting_table[1]['position']=="top" or setting_table[1]['position']=="bottom" then
+					w_x=(ctr*f_lenght)-f_lenght;
+					w_y=i_y;
+				elseif setting_table[1]['position']=="left" or setting_table[1]['position']=="right" then
+					w_y=(conky_parse("${desktop}")*f_lenght)-f_lenght;
+					w_x=i_x;
+				end
+				draw_workspace(w_x,w_y,f_lenght,setting_table[2],ctr);
 			end
-			draw_workspace(w_x,w_y,f_lenght,setting_table[2],ctr);
 			ctr=ctr+1;
 		end
 		----------------------------
@@ -267,7 +279,7 @@ function conky_workbar_main()
 		
 		-- Active workspace
 		----------------------------
-		draw_workspace(f_x,f_y,f_lenght,setting_table[3]);
+		draw_workspace(a_x,a_y,f_lenght,setting_table[3]);
 		----------------------------
 		-- End Active Workspace
 		
