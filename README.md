@@ -18,7 +18,9 @@ Installation
 --------------
 
 ```$ cd ~/.conky```
+
 ```$ git clone https://github.com/Youmy001/ob-workbar.git ob-workbar```
+
 ```$ cd ob-workbar```
 
 Execution
@@ -30,13 +32,16 @@ If you are running another conky config, copy the lua script into the same folde
 as your config, make this config fit your screen resolution and add the following into it:
 
 ```lua_load ob-workbar.lua```
+
 ```lua_draw_hook_post workbar_main```
 
 Version
 ------------
 
   13.06.01		Fixing positioning issues and better integration of the setting table
+  
   13.05.31		Working setting table
+  
   13.05.30		Original release
 
 License
