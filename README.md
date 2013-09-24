@@ -12,7 +12,7 @@ A light workspace indicator bar for Openbox [by Tommy Teasdale]
 Requires Takao font family:
 
  - For Debian-based Linux, you can install it through this command:
-```sudo apt-get install ttf-takao```
+```sudo apt-get install fonts-takao```
 
 Installation
 --------------
